@@ -1,0 +1,25 @@
+{
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug day 3",
+            "program": "${workspaceRoot}/day_3/target/debug/day_3",
+            "args": ["${input:command}"],
+            "cwd": "${workspaceRoot}/day_3",
+            "preLaunchTask": "rust: cargo build day_3",
+            "sourceLanguages": [
+                "rust"
+            ]
+        },
+    ],
+    "inputs": [
+        {
+            "id": "command",
+            "type": "promptString",
+            "description": "Enter command line arguments",
+        },
+    ]
+}
