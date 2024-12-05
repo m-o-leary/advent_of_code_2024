@@ -1,5 +1,4 @@
 use std::env;
-use std::path::absolute;
 use std::process;
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
