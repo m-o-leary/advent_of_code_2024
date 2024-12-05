@@ -2,57 +2,36 @@ mod helpers;
 use regex::Regex;
 use std::io::BufRead;
 
-fn parse_calcs(calcs: &String) -> i32 {
-    let re = Regex::new(r"mul\((?<left>\d{1,3}),(?<right>\d{1,3})\)").unwrap();
-    let do_re = Regex::new(r"don\'t\(\).*do\(\)").unwrap();
-    let mut matches: Vec<(i32, i32)> = vec![];
-    let dont_bounds: Vec<(usize,usize)> = do_re.find_iter(calcs).map(|m| (m.start(), m.end())).collect();
-
-    let group_names: Vec<&str> =
-        re.capture_names().skip(1).map(|x| x.unwrap()).collect();
-    
-    let mut cum_sum: i32 = 0;
-    
-    'match_loop: for caps in re.captures_iter(calcs) {
-        let mut left: i32 = 0; 
-        let mut right: i32 = 0;
-
-        for name in &group_names {
-            if let Some(m) = caps.name(name) {
-                'inner: for (start, stop) in &dont_bounds {
-                    let match_start = m.start();
-                    if match_start > *start && match_start < *stop {
-                        continue 'match_loop;
-                    } 
-                    if match_start < *start {
-                        break 'inner;
-                    }
-                }
-                if name == &"left" {
-                    left = match m.as_str().parse::<i32>() {
-                        Ok(number) => i32::from(number),
-                        Err(e) => {
-                            panic!("{}", e);
-                        }
-                    };
-                } else {
-                    right = match m.as_str().parse::<i32>() {
-                        Ok(number) => i32::from(number),
-                        Err(e) => {
-                            panic!("{}", e);
-                        }
-                    };
-
-                }
-
+fn parse_calcs(calcs: &String, can_mul: &mut bool) -> i32 {
+    let re = Regex::new(r"mul\((?<left>\d{1,3}),(?<right>\d{1,3})\)|(?<do>do\(\))|(?<dont>don\'t\(\))").unwrap();
+    let mut results: Vec<i32> = vec![];
+    println!("Can multiply: {}", can_mul);
+    for cap in re.captures_iter(calcs) {
+        let total_match = &cap[0];
+        // print!("Match: {} - ", total_match);
+        if total_match.contains("mul") {
+            let left = match &cap["left"].parse::<i32>() {
+                Ok(number) => *number,
+                Err(_) => {panic!("Cannot parse '{}'", &cap["left"])}
+            };
+            let right = match &cap["right"].parse::<i32>() {
+                Ok(number) => *number,
+                Err(_) => {panic!("Cannot parse '{}'", &cap["right"])}
+            };
+            // println!("{}*{} - use? : {}",left, right, can_mul);
+            
+            if *can_mul {
+                results.push(left * right);
             }
+        } else if total_match.contains("don't()") {
+            // println!("switching to no multiplication");
+            *can_mul = false;
+        } else if total_match.contains("do()"){
+            // println!("turning back on multiplication");
+            *can_mul = true;
         }
-        matches.push((left,right));
-        cum_sum += left * right;
     }
-
-    println!("{:?}", matches.len());
-    cum_sum
+    return results.iter().sum();
 }
 
 fn main() {
@@ -67,6 +46,7 @@ fn main() {
 
     // Read the lines
     let instructions: Vec<_> = file_buffer.lines().collect();
+    let mut can_mul = true;
     for maybe_report in instructions {
         let report = match maybe_report {
             Ok(report) => report,
@@ -74,7 +54,8 @@ fn main() {
                 panic!("{}",e)
             }
         };
-        total += parse_calcs(&report);
+        total += parse_calcs(&report, &mut can_mul);
+        println!("Running total: {}", total);
             
     }
     println!("Sum: {:?}", total);
